@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"test/models"
 	"test/pkg/response"
 	"test/service"
 
@@ -91,4 +90,23 @@ func getDeptLabel(dept string) string {
 		return label
 	}
 	return dept
+}
+
+func GetProfile(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	user, err := service.GetUserInfo(userID.(uint))
+	if err != nil {
+		response.Error(c, 10004, err.Error())
+		return
+	}
+	response.Success(c, gin.H{
+		"id":               user.ID,
+		"username":         user.Username,
+		"nickname":         user.Nickname,
+		"role":             user.Role,
+		"department":       user.Department,
+		"department_label": getDeptLabel(user.Department),
+		"email":            user.Email,
+		"created_at":       user.CreatedAt,
+	})
 }
