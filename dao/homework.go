@@ -8,6 +8,7 @@ import (
 )
 
 func CreateHomework(homework *models.Homework) error {
+
 	return DB.Create(homework).Error
 }
 
