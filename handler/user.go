@@ -110,3 +110,25 @@ func GetProfile(c *gin.Context) {
 		"created_at":       user.CreatedAt,
 	})
 }
+
+type BindEmailRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+func BindEmail(c *gin.Context) {
+	var req BindEmailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 10001, "邮箱格式错误")
+		return
+	}
+	userID, _ := c.Get("user_id")
+	err := service.BindEmail(service.BindEmailRequest{
+		UserID: userID.(uint),
+		Email:  req.Email,
+	})
+	if err != nil {
+		response.Error(c, 10005, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}

@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"test/configs"
+	"test/cron"
 	"test/dao"
+	"test/pkg/email"
 	"test/router"
 )
 
@@ -18,6 +20,11 @@ func main() {
 	}
 	fmt.Println("✅ 数据库连接成功")
 
+	email.Init()
+	configs.Init()
+	cron.Init()
+	defer cron.Stop()
+
 	r := router.SetupRouter()
 
 	port := configs.Cfg.Server.Port
@@ -27,4 +34,5 @@ func main() {
 	fmt.Println("测试个人信息: GET /user/profile (需要 Authorization Header)")
 
 	r.Run(fmt.Sprintf(":%d", port))
+
 }

@@ -13,3 +13,15 @@ jwt:
   secret: "your-key"
   access_expire: 30
   refresh_expire: 10080
+
+smtp:
+    enable: false
+    host: smtp.163.com
+    port: 465
+    username: username@163.com
+    password: password
+    from: "红岩网校作业系统"
+
+cron:
+    enable: true
+    reminder_time: "0 9 * * *"

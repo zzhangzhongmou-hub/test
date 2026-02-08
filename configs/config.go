@@ -12,8 +12,23 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	SMTP     SMTPConfig     `mapstructure:"smtp"`
+	Cron     CronConfig     `mapstructure:"cron"`
 }
 
+type SMTPConfig struct {
+	Enable   bool   `mapstructure:"enable"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+}
+
+type CronConfig struct {
+	Enable       bool   `mapstructure:"enable"`
+	ReminderTime string `mapstructure:"reminder_time"`
+}
 type ServerConfig struct {
 	Port int    `mapstructure:"port"`
 	Mode string `mapstructure:"mode"`

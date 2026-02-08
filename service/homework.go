@@ -60,6 +60,10 @@ func CreateHomework(req CreateHomeworkRequest) error {
 		Deadline:    deadline,
 		AllowLate:   req.AllowLate,
 	}
+	go func() {
+		time.Sleep(2 * time.Second) // 等待数据库事务提交完成
+		EmailSvc.NotifyNewHomework(req.Department, req.Title)
+	}()
 	if err != nil {
 		return err
 	}

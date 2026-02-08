@@ -3,6 +3,7 @@ package dao
 import (
 	"errors"
 	"test/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -40,6 +41,12 @@ func GetHomeworksByDepartment(department string, page, pageSize int) ([]models.H
 		Find(&homeworks).Error
 
 	return homeworks, total, err
+}
+
+func GetHomeworksByDeadlineRange(start, end time.Time) ([]models.Homework, error) {
+	var homeworks []models.Homework
+	err := DB.Where("deadline BETWEEN ? AND ?", start, end).Find(&homeworks).Error
+	return homeworks, err
 }
 
 func UpdateHomework(homework *models.Homework) error {

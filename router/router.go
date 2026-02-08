@@ -1,10 +1,11 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"test/handler"
 	"test/middleware"
 	"test/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
@@ -23,6 +24,7 @@ func SetupRouter() *gin.Engine {
 	auth.Use(middleware.JWTAuth())
 	{
 		auth.GET("/user/profile", handler.GetProfile)
+		auth.POST("/user/bindEmail", handler.BindEmail)
 		auth.GET("/homework", handler.GetHomeworkList)
 		auth.GET("/homework/:id", handler.GetHomeworkDetail)
 
