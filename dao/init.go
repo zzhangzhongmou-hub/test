@@ -26,6 +26,7 @@ func InitDB() error {
 		&models.Homework{},
 		&models.Submission{},
 		&models.Exam{},
+		&models.ExamReview{},
 	)
 	if err != nil {
 		return err

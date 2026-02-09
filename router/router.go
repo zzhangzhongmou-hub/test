@@ -34,6 +34,10 @@ func SetupRouter() *gin.Engine {
 			admin.POST("/homework", handler.CreateHomework)
 			admin.PUT("/homework/:id", handler.UpdateHomework)
 			admin.DELETE("/homework/:id", handler.DeleteHomework)
+
+			admin.POST("/exam", handler.CreateExam)
+			admin.GET("/exam/reviews", handler.GetMyReviews)
+			admin.POST("/exam/review", handler.SubmitReview)
 		}
 	}
 	return r
