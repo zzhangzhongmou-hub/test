@@ -39,7 +39,7 @@ func parseDeadline(deadlineStr string) (time.Time, error) {
 	if err != nil {
 		loc = time.FixedZone("CST", 8*60*60)
 	}
-	deadline, err := time.ParseInLocation("2024-02-02 15:04:05", deadlineStr, loc)
+	deadline, err := time.ParseInLocation("2006-01-02 15:04:05", deadlineStr, loc)
 	if err != nil {
 		return time.Time{}, errors.New("时间格式错误，请使用：2006-01-02 15:04:05")
 	}
@@ -61,7 +61,7 @@ func CreateHomework(req CreateHomeworkRequest) error {
 		AllowLate:   req.AllowLate,
 	}
 	go func() {
-		time.Sleep(2 * time.Second) // 等待数据库事务提交完成
+		time.Sleep(2 * time.Second)
 		EmailSvc.NotifyNewHomework(req.Department, req.Title)
 	}()
 	if err != nil {
@@ -105,7 +105,6 @@ func UpdateHomework(req UpdateHomeworkRequest) error {
 	}
 	homework.Title = req.Title
 	homework.Description = req.Description
-	// homework.Deadline = ... // 明天完善时间解析
 	homework.AllowLate = req.AllowLate
 	homework.Version = req.Version
 

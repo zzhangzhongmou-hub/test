@@ -25,3 +25,11 @@ smtp:
 cron:
     enable: true
     reminder_time: "0 9 * * *"
+
+    ai:
+      enable: true
+      provider: deepseek
+      api_key: sk-******
+      base_url: https://api.deepseek.com
+      model: deepseek-coder
+      timeout: 10

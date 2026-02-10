@@ -20,7 +20,7 @@ type CreateExamRequest struct {
 
 func CreateExam(req CreateExamRequest) error {
 	loc, _ := time.LoadLocation("Asia/Shanghai")
-	deadline, err := time.ParseInLocation("2025-02-05 15:04:05", req.Deadline, loc)
+	deadline, err := time.ParseInLocation("2006-01-02 15:04:05", req.Deadline, loc)
 	if err != nil {
 		return errors.New("截止时间格式错误，请使用 2006-01-02 15:04:05 格式")
 	}

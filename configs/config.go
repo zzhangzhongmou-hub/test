@@ -14,6 +14,7 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	SMTP     SMTPConfig     `mapstructure:"smtp"`
 	Cron     CronConfig     `mapstructure:"cron"`
+	AI       AIConfig       `mapstructure:"ai"`
 }
 
 type SMTPConfig struct {
@@ -61,4 +62,14 @@ func Init() error {
 		return fmt.Errorf("解析配置失败:%w", err)
 	}
 	return nil
+}
+
+type AIConfig struct {
+	Enable    bool   `mapstructure:"enable"`
+	Provider  string `mapstructure:"provider"`
+	APIKey    string `mapstructure:"api_key"`
+	BaseURL   string `mapstructure:"base_url"`
+	Model     string `mapstructure:"model"`
+	Timeout   int    `mapstructure:"timeout"`
+	MaxTokens int    `mapstructure:"max_tokens"`
 }
