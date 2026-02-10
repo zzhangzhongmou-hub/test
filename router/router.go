@@ -28,12 +28,20 @@ func SetupRouter() *gin.Engine {
 		auth.GET("/homework", handler.GetHomeworkList)
 		auth.GET("/homework/:id", handler.GetHomeworkDetail)
 
+		auth.POST("/submission", handler.Submit)
+		auth.GET("/submission/my", handler.GetMySubmissions)
+		auth.GET("/submission/excellent", handler.GetExcellentSubmissions)
+
 		admin := auth.Group("/")
 		admin.Use(middleware.RoleAuth(models.RoleAdmin))
 		{
 			admin.POST("/homework", handler.CreateHomework)
 			admin.PUT("/homework/:id", handler.UpdateHomework)
 			admin.DELETE("/homework/:id", handler.DeleteHomework)
+
+			admin.GET("/submission/homework/:homework_id", handler.GetSubmissionsByHomework) // 查看作业的所有提交
+			admin.PUT("/submission/:id/review", handler.Review)                              // 批改作业
+			admin.PUT("/submission/:id/excellent", handler.MarkExcellent)
 
 			admin.POST("/exam", handler.CreateExam)
 			admin.GET("/exam/reviews", handler.GetMyReviews)

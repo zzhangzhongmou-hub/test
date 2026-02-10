@@ -9,8 +9,8 @@ import (
 type Submission struct {
 	ID          uint           `gorm:"primarykey" json:"id"`
 	Type        string         `gorm:"size:20;not null;index" json:"type"` //考核与作业
-	HomeworkID  *uint          `gorm:"index" json:"homework_id"`
-	ExamID      *uint          `gorm:"index" json:"exam_id"`
+	HomeworkID  uint           `gorm:"index" json:"homework_id"`
+	ExamID      uint           `gorm:"index" json:"exam_id"`
 	StudentID   uint           `gorm:"not null;index" json:"student_id"`
 	Content     string         `gorm:"type:text;not null" json:"content"`
 	IsLate      bool           `gorm:"default:false" json:"is_late"`
@@ -24,4 +24,7 @@ type Submission struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	Status      string         `json:"status"`
+	Homework    Homework       `gorm:"foreignKey:HomeworkID" json:"homework,omitempty"`
+	Student     User           `gorm:"foreignKey:StudentID" json:"student,omitempty"`
 }
