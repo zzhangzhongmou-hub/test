@@ -25,6 +25,7 @@ func SetupRouter() *gin.Engine {
 	{
 		auth.GET("/user/profile", handler.GetProfile)
 		auth.POST("/user/bindEmail", handler.BindEmail)
+		auth.DELETE("/user/account", handler.DeleteAccount)
 		auth.GET("/homework", handler.GetHomeworkList)
 		auth.GET("/homework/:id", handler.GetHomeworkDetail)
 
@@ -42,6 +43,7 @@ func SetupRouter() *gin.Engine {
 			admin.GET("/submission/homework/:homework_id", handler.GetSubmissionsByHomework) // 查看作业的所有提交
 			admin.PUT("/submission/:id/review", handler.Review)                              // 批改作业
 			admin.PUT("/submission/:id/excellent", handler.MarkExcellent)
+			admin.POST("/submission/:id/aiReview", handler.AIReview)
 
 			admin.POST("/exam", handler.CreateExam)
 			admin.GET("/exam/reviews", handler.GetMyReviews)
