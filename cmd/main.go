@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"test/configs"
 	"test/cron"
 	"test/dao"
@@ -21,18 +23,21 @@ func main() {
 	fmt.Println("✅ 数据库连接成功")
 
 	email.Init()
-	configs.Init()
 	cron.Init()
 	defer cron.Stop()
 
 	r := router.SetupRouter()
 
 	port := configs.Cfg.Server.Port
+
+	if envPort := os.Getenv("SERVER_PORT"); envPort != "" {
+		if p, err := strconv.Atoi(envPort); err == nil {
+			port = p
+		}
+	}
+
 	fmt.Printf("服务启动，监听端口: %d\n", port)
 	fmt.Printf("API 地址: http://localhost:%d\n", port)
-	fmt.Println("测试登录: POST /user/login")
-	fmt.Println("测试个人信息: GET /user/profile (需要 Authorization Header)")
 
 	r.Run(fmt.Sprintf(":%d", port))
-
 }

@@ -132,3 +132,25 @@ func BindEmail(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+type DeleteAccountRequest struct {
+	Password string `json:"password" binding:"required"`
+}
+
+func DeleteAccount(c *gin.Context) {
+	var req DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 10001, "参数错误")
+		return
+	}
+
+	userID, _ := c.Get("user_id")
+
+	err := service.DeleteUser(userID.(uint), req.Password)
+	if err != nil {
+		response.Error(c, 10006, err.Error())
+		return
+	}
+
+	response.Success(c, nil)
+}

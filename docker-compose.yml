@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: homework-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: redrock123
+      MYSQL_DATABASE: homework_system
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - homework-net
+
+  app:
+    build: .
+    container_name: homework-app
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=redrock123
+      - DB_NAME=homework_system
+      - JWT_SECRET=redrock-secret-key-homework-2024
+      - GIN_MODE=release
+      - SERVER_PORT=8080
+    depends_on:
+      - mysql
+    networks:
+      - homework-net
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+
+networks:
+  homework-net:
+    driver: bridge

@@ -87,16 +87,18 @@ func GetHomeworkDetail(id uint) (*models.Homework, error) {
 
 func UpdateHomework(req UpdateHomeworkRequest) error {
 	homework, err := dao.GetHomeworkByID(req.ID)
+	if err != nil {
+		return errors.New("作业不存在")
+	}
 	if req.Deadline != "" {
 		newDeadline, err := parseDeadline(req.Deadline)
 		if err != nil {
+
 			return err
 		}
 		homework.Deadline = newDeadline
 	}
-	if err != nil {
-		return errors.New("作业不存在")
-	}
+
 	if homework.Department != req.UpdaterDept {
 		return errors.New("只能修改本部门的作业")
 	}

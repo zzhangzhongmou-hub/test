@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+	"test/dao"
 	"test/pkg/response"
 	"test/service"
 
@@ -78,6 +79,13 @@ func GetSubmissionsByHomework(c *gin.Context) {
 	homeworkID, err := strconv.ParseUint(homeworkIDStr, 10, 64)
 	if err != nil {
 		response.Error(c, 10001, "作业ID格式错误")
+		return
+	}
+
+	dept, _ := c.Get("department")
+	homework, _ := dao.GetHomeworkByID(uint(homeworkID))
+	if homework.Department != dept.(string) {
+		response.Error(c, 10003, "只能查看本部门作业的提交")
 		return
 	}
 

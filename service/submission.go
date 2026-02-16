@@ -36,12 +36,13 @@ func Submit(req SubmitRequest) error {
 	}
 
 	submission := &models.Submission{
-		HomeworkID: req.HomeworkID,
-		StudentID:  req.StudentID,
-		Content:    req.Content,
-		FileURL:    req.FileURL,
-		IsLate:     isLate,
-		Status:     "submitted",
+		HomeworkID:  req.HomeworkID,
+		StudentID:   req.StudentID,
+		Content:     req.Content,
+		FileURL:     req.FileURL,
+		IsLate:      isLate,
+		Status:      "submitted",
+		SubmittedAt: time.Now(),
 	}
 
 	return dao.CreateSubmission(submission)

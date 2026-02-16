@@ -97,7 +97,7 @@ func GetHomeworkDetail(c *gin.Context) {
 		"description":      homework.Description,
 		"department":       homework.Department,
 		"department_label": getDeptLabel(homework.Department),
-		"deadline":         homework.Deadline.Format("2025-02-05 15:04:05"),
+		"deadline":         homework.Deadline.Format("2006-01-02 15:04:05"),
 		"allow_late":       homework.AllowLate,
 		"creator_id":       homework.CreatorID,
 		"version":          homework.Version,

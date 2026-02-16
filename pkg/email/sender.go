@@ -39,7 +39,7 @@ func Init() {
 	fmt.Printf("[Email] 邮件服务已启动 (%s:%d)\n", cfg.Host, cfg.Port)
 }
 
-// email.Send([]string{"user@qq.com"}, "标题", "内容", true)
+// email.Send([]string{"user@163.com"}, "标题", "内容", true)
 func Send(to []string, subject, body string, isHTML bool) {
 	if !configs.Cfg.SMTP.Enable || mailQueue == nil {
 		fmt.Printf("[Email] 跳过发送（功能未启用）: %v\n", to)
