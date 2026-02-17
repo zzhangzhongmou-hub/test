@@ -72,7 +72,7 @@
 - 配置管理：Viper
 
 ## 项目结构
-
+```
 homework-system/
 ├── cmd/                        # 程序入口
 │   └── main.go
@@ -121,8 +121,10 @@ homework-system/
 ├── docker-compose.yml          # Docker 编排
 ├── go.mod
 ├── go.sum
+├── static/
+│   └── index.html           # vibe 前端
 └── README.md                   # 本文件
-
+```
 ## 快速开始
 
 ## 前端界面（AI Vibe 生成）

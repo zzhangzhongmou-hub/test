@@ -11,13 +11,14 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
-
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
 
+COPY --from=builder /app/configs/config.yaml ./Configs/config.yaml
 COPY --from=builder /app/main .
-COPY configs/ ./configs/
+
+COPY --from=builder /app/static ./static
 
 ENV TZ=Asia/Shanghai
 EXPOSE 8080
