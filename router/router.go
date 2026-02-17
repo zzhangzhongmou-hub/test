@@ -11,6 +11,9 @@ import (
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
+	r.StaticFile("/", "./index.html")
+	r.StaticFile("/homework.html", "./homework.html")
+
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
 

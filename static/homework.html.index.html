@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红岩网校作业系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { background-color: #0f0f0f; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .brand-orange { color: #ff6b00; }
+        .bg-brand-orange { background-color: #ff6b00; }
+        .bg-brand-orange:hover { background-color: #e65c00; }
+        .card { background-color: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .input-dark { background-color: #262626; border: 1px solid #444; color: white; padding: 10px; width: 100%; border-radius: 4px; }
+        .input-dark:focus { border-color: #ff6b00; outline: none; }
+        .btn-primary { background-color: #ff6b00; color: white; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-primary:hover { background-color: #e65c00; }
+        .btn-secondary { background-color: #333; color: white; padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; }
+        .sidebar { background-color: #141414; border-right: 1px solid #333; width: 220px; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
+        .main-content { margin-left: 240px; padding: 24px; }
+        .nav-item { padding: 12px; margin: 4px 0; border-radius: 4px; cursor: pointer; color: #888; display: flex; align-items: center; gap: 8px; }
+        .nav-item:hover { background-color: #262626; color: #fff; }
+        .nav-item.active { background-color: rgba(255, 107, 0, 0.1); color: #ff6b00; border-left: 3px solid #ff6b00; }
+        .tag { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .tag-orange { background-color: rgba(255, 107, 0, 0.2); color: #ff6b00; border: 1px solid #ff6b00; }
+        .tag-green { background-color: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .tag-red { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <!-- 登录页 -->
+    <div v-if="!token" class="flex items-center justify-center min-h-screen bg-[#141414]">
+        <div class="card w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold brand-orange mb-2">红岩网校</h1>
+                <p class="text-gray-400">作业管理系统</p>
+            </div>
+            
+            <div v-if="error" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 text-sm border border-red-800">{{ error }}</div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">用户名</label>
+                    <input v-model="loginForm.username" type="text" class="input-dark" placeholder="输入用户名" @keyup.enter="login">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">密码</label>
+                    <input v-model="loginForm.password" type="password" class="input-dark" placeholder="输入密码" @keyup.enter="login">
+                </div>
+                <button @click="login" class="btn-primary w-full py-3 mt-4" :disabled="loading">
+                    {{ loading ? '登录中...' : '登录' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div v-else class="flex">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="mb-8 pb-4 border-b border-gray-800">
+                <h2 class="text-xl font-bold brand-orange">红岩网校</h2>
+                <p class="text-xs text-gray-500 mt-1">作业管理系统</p>
+            </div>
+            
+            <div class="mb-4">
+                <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">菜单</div>
+                <div @click="currentTab = 'homeworks'" :class="['nav-item', currentTab === 'homeworks' ? 'active' : '']">
+                    <span>📚</span> 作业大厅
+                </div>
+                <div v-if="user?.role === 'student'" @click="currentTab = 'my'" :class="['nav-item', currentTab === 'my' ? 'active' : '']">
+                    <span>📝</span> 我的提交
+                </div>
+                <div v-if="user?.role === 'admin'" @click="currentTab = 'create'" :class="['nav-item', currentTab === 'create' ? 'active' : '']">
+                    <span>➕</span> 发布作业
+                </div>
+            </div>
+
+            <div class="absolute bottom-4 left-4 right-4">
+                <div class="card p-3 mb-3 !bg-[#0f0f0f]">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-white font-bold text-lg">
+                            {{ user?.nickname?.[0] || 'U' }}
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-white">{{ user?.nickname }}</div>
+                            <div class="text-xs brand-orange">
+                                {{ user?.role === 'admin' ? '👨‍🏫 老登' : '👨‍🎓 小登' }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500">{{ user?.department_label }}</div>
+                </div>
+                <button @click="logout" class="btn-secondary w-full text-sm py-2">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content w-full">
+            <!-- 作业大厅 -->
+            <div v-if="currentTab === 'homeworks'">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">作业大厅</h2>
+                    <div class="flex gap-3">
+                        <select v-model="filterDept" @change="page = 1; fetchHomeworks()" class="input-dark w-40">
+                            <option value="">全部部门</option>
+                            <option value="backend">后端</option>
+                            <option value="frontend">前端</option>
+                            <option value="sre">SRE</option>
+                            <option value="product">产品</option>
+                            <option value="design">视觉设计</option>
+                            <option value="android">Android</option>
+                            <option value="ios">iOS</option>
+                        </select>
+                        <button @click="fetchHomeworks" class="btn-primary">刷新</button>
+                    </div>
+                </div>
+
+                <div v-if="loading" class="loading">加载中...</div>
+                
+                <div v-else class="grid gap-4">
+                    <div v-for="hw in homeworks" :key="hw.id" @click="viewDetail(hw)" class="card cursor-pointer hover:border-orange-500 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-lg font-bold text-white">{{ hw.title }}</h3>
+                            <span class="tag tag-orange">{{ hw.department_label }}</span>
+                        </div>
+                        <div class="text-gray-400 text-sm mb-3">
+                            <span class="mr-4">⏰ 截止时间：{{ hw.deadline }}</span>
+                            <span :class="hw.allow_late ? 'text-green-400' : 'text-red-400'">
+                                {{ hw.allow_late ? '✓ 允许补交' : '✗ 不允许补交' }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">发布者：{{ hw.creator?.nickname || '未知' }}</span>
+                            <span class="brand-orange cursor-pointer">查看详情 →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center gap-2 mt-6">
+                    <button @click="page > 1 && (page--, fetchHomeworks())" :disabled="page === 1" class="btn-secondary" :class="{ 'opacity-50 cursor-not-allowed': page === 1 }">上一页</button>
+                    <span class="px-4 py-2 text-gray-400">第 {{ page }} 页</span>
+                    <button @click="page++, fetchHomeworks()" class="btn-secondary">下一页</button>
+                </div>
+            </div>
+
+            <!-- 作业详情 -->
+            <div v-if="currentTab === 'detail' && selectedHomework">
+                <button @click="currentTab = 'homeworks'" class="text-gray-400 hover:text-white mb-4 flex items-center gap-2">
+                    ← 返回列表
+                </button>
+                
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold mb-4 text-white">{{ selectedHomework.title }}</h2>
+                    <div class="grid grid-cols-3 gap-4 mb-6 text-sm">
+                        <div><span class="text-gray-500">部门：</span><span class="tag tag-orange">{{ selectedHomework.department_label }}</span></div>
+                        <div><span class="text-gray-500">截止时间：</span><span class="text-white">{{ selectedHomework.deadline }}</span></div>
+                        <div><span class="text-gray-500">补交：</span>
+                            <span :class="selectedHomework.allow_late ? 'text-green-400' : 'text-red-400'">
+                                {{ selectedHomework.allow_late ? '允许' : '不允许' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="bg-[#0f0f0f] p-4 rounded border border-gray-800 whitespace-pre-wrap text-gray-300">
+                        {{ selectedHomework.description }}
+                    </div>
+                </div>
+
+                <!-- Student 提交表单 -->
+                <div v-if="user?.role === 'student'" class="card">
+                    <h3 class="font-bold mb-4 brand-orange text-lg">提交作业</h3>
+                    <div v-if="submitSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">提交成功！</div>
+                    <div v-if="submitError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ submitError }}</div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">提交内容 / GitHub 链接</label>
+                            <textarea v-model="submitForm.content" rows="4" class="input-dark" placeholder="请输入作业内容或代码仓库链接..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">附件链接（可选）</label>
+                            <input v-model="submitForm.file_url" type="text" class="input-dark" placeholder="https://...">
+                        </div>
+                        <button @click="submitHomework" class="btn-primary" :disabled="submitting">
+                            {{ submitting ? '提交中...' : '提交作业' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Admin 查看提交列表 -->
+                <div v-if="user?.role === 'admin'" class="card">
+                    <h3 class="font-bold mb-4 brand-orange text-lg">学生提交记录</h3>
+                    <div v-if="submissions.length === 0" class="text-gray-500 text-center py-8">暂无提交记录</div>
+                    <div v-else class="space-y-3">
+                        <div v-for="sub in submissions" :key="sub.id" class="bg-[#0f0f0f] p-4 rounded border border-gray-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-white">学生ID: {{ sub.student_id }}</span>
+                                <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">
+                                    {{ sub.is_late ? '迟交' : '准时' }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-2 line-clamp-2">{{ sub.content }}</p>
+                            <div class="flex justify-between items-center">
+                                <span v-if="sub.score !== null" class="text-xl font-bold brand-orange">{{ sub.score }} 分</span>
+                                <span v-else class="text-gray-500 text-sm">未批改</span>
+                                <span v-if="sub.is_excellent" class="tag tag-orange">优秀作业</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的提交 -->
+            <div v-if="currentTab === 'my'">
+                <h2 class="text-2xl font-bold mb-6 text-white">我的提交记录</h2>
+                <div v-if="myLoading" class="loading">加载中...</div>
+                <div v-else-if="mySubmissions.length === 0" class="text-center text-gray-500 py-12">
+                    暂无提交记录
+                </div>
+                <div v-else class="grid gap-4">
+                    <div v-for="sub in mySubmissions" :key="sub.id" class="card">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-bold text-white text-lg">{{ sub.homework?.title || '未知作业' }}</h3>
+                            <div class="flex gap-2">
+                                <span v-if="sub.is_excellent" class="tag tag-orange">优秀作业</span>
+                                <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">
+                                    {{ sub.is_late ? '迟交' : '准时' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-400 mb-3">提交时间：{{ sub.submitted_at }}</div>
+                        <div class="bg-[#0f0f0f] p-3 rounded mb-4 text-gray-300 text-sm border border-gray-800">
+                            {{ sub.content }}
+                        </div>
+                        
+                        <div v-if="sub.score !== null" class="flex items-center gap-4">
+                            <div class="text-3xl font-bold brand-orange">{{ sub.score }}<span class="text-lg">分</span></div>
+                            <div class="flex-1">
+                                <div class="text-sm text-gray-500 mb-1">评语：</div>
+                                <div class="text-gray-300 bg-[#262626] p-3 rounded text-sm">{{ sub.comment || '暂无评语' }}</div>
+                            </div>
+                        </div>
+                        <div v-else class="text-gray-500 text-center py-4 bg-[#0f0f0f] rounded border border-gray-800">
+                            ⏳ 等待老师批改中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发布作业 (Admin) -->
+            <div v-if="currentTab === 'create'">
+                <h2 class="text-2xl font-bold mb-6 text-white">发布新作业</h2>
+                <div class="card max-w-2xl">
+                    <div v-if="createSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">发布成功！</div>
+                    <div v-if="createError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ createError }}</div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">作业标题</label>
+                            <input v-model="createForm.title" type="text" class="input-dark" placeholder="例如：第一周作业：实现用户登录">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">所属部门</label>
+                            <select v-model="createForm.department" class="input-dark">
+                                <option value="backend">后端</option>
+                                <option value="frontend">前端</option>
+                                <option value="sre">SRE</option>
+                                <option value="product">产品</option>
+                                <option value="design">视觉设计</option>
+                                <option value="android">Android</option>
+                                <option value="ios">iOS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">截止时间</label>
+                            <input v-model="createForm.deadline" type="text" class="input-dark" placeholder="2026-02-20 23:59:59">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">作业描述</label>
+                            <textarea v-model="createForm.description" rows="5" class="input-dark" placeholder="详细描述作业要求..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input v-model="createForm.allow_late" type="checkbox" id="allow_late" class="w-4 h-4 accent-orange-500">
+                            <label for="allow_late" class="text-sm">允许补交</label>
+                        </div>
+                        <button @click="createHomework" class="btn-primary w-full py-3" :disabled="creating">
+                            {{ creating ? '发布中...' : '发布作业' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            API_BASE_URL: 'http://localhost:8080',
+            token: localStorage.getItem('access_token') || '',
+            user: JSON.parse(localStorage.getItem('user') || 'null'),
+            currentTab: 'homeworks',
+            loading: false,
+            error: '',
+            
+            // 登录
+            loginForm: { username: '', password: '' },
+            
+            // 作业列表
+            homeworks: [],
+            page: 1,
+            filterDept: '',
+            
+            // 详情
+            selectedHomework: null,
+            submissions: [],
+            
+            // 提交
+            submitForm: { content: '', file_url: '' },
+            submitting: false,
+            submitSuccess: false,
+            submitError: '',
+            
+            // 我的提交
+            mySubmissions: [],
+            myLoading: false,
+            
+            // 创建
+            createForm: {
+                title: '',
+                department: 'backend',
+                description: '',
+                deadline: '',
+                allow_late: false
+            },
+            creating: false,
+            createSuccess: false,
+            createError: ''
+        }
+    },
+    mounted() {
+        if (this.token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+            this.fetchHomeworks();
+            if (this.user?.role === 'student') this.fetchMySubmissions();
+        }
+    },
+    methods: {
+        async login() {
+            this.loading = true;
+            this.error = '';
+            try {
+                const res = await axios.post(`${this.API_BASE_URL}/user/login`, this.loginForm);
+                if (res.data.code === 0) {
+                    this.token = res.data.data.access_token;
+                    this.user = res.data.data.user;
+                    localStorage.setItem('access_token', this.token);
+                    localStorage.setItem('user', JSON.stringify(this.user));
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+                    this.fetchHomeworks();
+                    if (this.user.role === 'student') this.fetchMySubmissions();
+                } else {
+                    this.error = res.data.message;
+                }
+            } catch (e) {
+                this.error = '登录失败：' + (e.response?.data?.message || e.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+        logout() {
+            this.token = '';
+            this.user = null;
+            localStorage.clear();
+            this.currentTab = 'homeworks';
+            delete axios.defaults.headers.common['Authorization'];
+        },
+        async fetchHomeworks() {
+            this.loading = true;
+            try {
+                const res = await axios.get(`${this.API_BASE_URL}/homework`, {
+                    params: { department: this.filterDept, page: this.page, page_size: 10 }
+                });
+                this.homeworks = res.data.data?.list || [];
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.loading = false;
+            }
+        },
+        viewDetail(hw) {
+            this.selectedHomework = hw;
+            this.currentTab = 'detail';
+            this.submitSuccess = false;
+            this.submitError = '';
+            this.submitForm = { content: '', file_url: '' };
+            if (this.user?.role === 'admin') this.fetchSubmissions(hw.id);
+        },
+        async fetchSubmissions(homeworkId) {
+            try {
+                const res = await axios.get(`${this.API_BASE_URL}/submission/homework/${homeworkId}`);
+                this.submissions = res.data.data?.list || [];
+            } catch (e) {
+                console.error(e);
+            }
+        },
+        async submitHomework() {
+            this.submitting = true;
+            this.submitError = '';
+            this.submitSuccess = false;
+            try {
+                const res = await axios.post(`${this.API_BASE_URL}/submission`, {
+                    homework_id: this.selectedHomework.id,
+                    content: this.submitForm.content,
+                    file_url: this.submitForm.file_url
+                });
+                if (res.data.code === 0) {
+                    this.submitSuccess = true;
+                    this.submitForm = { content: '', file_url: '' };
+                    this.fetchMySubmissions();
+                } else {
+                    this.submitError = res.data.message;
+                }
+            } catch (e) {
+                this.submitError = e.response?.data?.message || '提交失败';
+            } finally {
+                this.submitting = false;
+            }
+        },
+        async fetchMySubmissions() {
+            this.myLoading = true;
+            try {
+                const res = await axios.get(`${this.API_BASE_URL}/submission/my`);
+                this.mySubmissions = res.data.data?.list || [];
+            } catch (e) {
+                console.error(e);
+            } finally {
+                this.myLoading = false;
+            }
+        },
+        async createHomework() {
+            this.creating = true;
+            this.createError = '';
+            this.createSuccess = false;
+            try {
+                const res = await axios.post(`${this.API_BASE_URL}/homework`, this.createForm);
+                if (res.data.code === 0) {
+                    this.createSuccess = true;
+                    this.createForm = {
+                        title: '',
+                        department: 'backend',
+                        description: '',
+                        deadline: '',
+                        allow_late: false
+                    };
+                    this.fetchHomeworks();
+                } else {
+                    this.createError = res.data.message;
+                }
+            } catch (e) {
+                this.createError = e.response?.data?.message || '发布失败';
+            } finally {
+                this.creating = false;
+            }
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
