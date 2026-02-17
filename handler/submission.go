@@ -83,7 +83,13 @@ func GetSubmissionsByHomework(c *gin.Context) {
 	}
 
 	dept, _ := c.Get("department")
+
 	homework, _ := dao.GetHomeworkByID(uint(homeworkID))
+	if err != nil || homework == nil {
+		response.Error(c, 10004, "作业不存在")
+		return
+	}
+
 	if homework.Department != dept.(string) {
 		response.Error(c, 10003, "只能查看本部门作业的提交")
 		return

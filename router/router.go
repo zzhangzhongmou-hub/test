@@ -17,6 +17,7 @@ func SetupRouter() *gin.Engine {
 	userGroup := r.Group("/user")
 	{
 		userGroup.POST("/register", handler.Register)
+		userGroup.POST("/login", handler.Login)
 	}
 	auth := r.Group("/")
 	auth.Use(middleware.JWTAuth())
