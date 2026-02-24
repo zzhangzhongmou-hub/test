@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>红岩网校作业系统</title>
+    <title>红岩网校作业考核系统 - 完整版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -18,7 +18,9 @@
         .btn-primary { background-color: #ff6b00; color: white; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-primary:hover { background-color: #e65c00; }
         .btn-secondary { background-color: #333; color: white; padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; }
-        .sidebar { background-color: #141414; border-right: 1px solid #333; width: 220px; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; }
+        .btn-success { background-color: #22c55e; color: white; padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-purple { background-color: #8b5cf6; color: white; padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; }
+        .sidebar { background-color: #141414; border-right: 1px solid #333; width: 220px; height: 100vh; position: fixed; left: 0; top: 0; padding: 20px; overflow-y: auto; }
         .main-content { margin-left: 240px; padding: 24px; }
         .nav-item { padding: 12px; margin: 4px 0; border-radius: 4px; cursor: pointer; color: #888; display: flex; align-items: center; gap: 8px; }
         .nav-item:hover { background-color: #262626; color: #fff; }
@@ -27,23 +29,29 @@
         .tag-orange { background-color: rgba(255, 107, 0, 0.2); color: #ff6b00; border: 1px solid #ff6b00; }
         .tag-green { background-color: rgba(34, 197, 94, 0.2); color: #22c55e; }
         .tag-red { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .tag-blue { background-color: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .tag-purple { background-color: rgba(139, 92, 246, 0.2); color: #8b5cf6; border: 1px solid #8b5cf6; }
         .loading { text-align: center; padding: 40px; color: #666; }
         [v-cloak] { display: none; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
 <body>
 <div id="app" v-cloak>
-    <!-- 登录页 -->
+    <!-- 登录/注册页 -->
     <div v-if="!token" class="flex items-center justify-center min-h-screen bg-[#141414]">
         <div class="card w-full max-w-md">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold brand-orange mb-2">红岩网校</h1>
-                <p class="text-gray-400">作业管理系统</p>
+                <p class="text-gray-400">{{ isLogin ? '作业考核管理系统' : '注册新账号' }}</p>
             </div>
-            
+
             <div v-if="error" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 text-sm border border-red-800">{{ error }}</div>
-            
-            <div class="space-y-4">
+            <div v-if="successMsg" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 text-sm border border-green-800">{{ successMsg }}</div>
+
+            <!-- 登录表单 -->
+            <div v-if="isLogin" class="space-y-4">
                 <div>
                     <label class="block text-gray-400 mb-2 text-sm">用户名</label>
                     <input v-model="loginForm.username" type="text" class="input-dark" placeholder="输入用户名" @keyup.enter="login">
@@ -55,6 +63,45 @@
                 <button @click="login" class="btn-primary w-full py-3 mt-4" :disabled="loading">
                     {{ loading ? '登录中...' : '登录' }}
                 </button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-500 text-sm">还没有账号？</span>
+                    <button @click="toggleAuthMode" class="text-orange-500 text-sm hover:underline ml-1">立即注册</button>
+                </div>
+            </div>
+
+            <!-- 注册表单 -->
+            <div v-else class="space-y-4">
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">用户名 <span class="text-xs text-gray-600">(英文/数字)</span></label>
+                    <input v-model="registerForm.username" type="text" class="input-dark" placeholder="例如：xiaodeng001">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">密码</label>
+                    <input v-model="registerForm.password" type="password" class="input-dark" placeholder="设置密码">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">昵称</label>
+                    <input v-model="registerForm.nickname" type="text" class="input-dark" placeholder="例如：小登一号">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-2 text-sm">所属部门</label>
+                    <select v-model="registerForm.department" class="input-dark">
+                        <option value="backend">后端</option>
+                        <option value="frontend">前端</option>
+                        <option value="sre">SRE</option>
+                        <option value="product">产品</option>
+                        <option value="design">视觉设计</option>
+                        <option value="android">Android</option>
+                        <option value="iOS">iOS</option>
+                    </select>
+                </div>
+                <button @click="register" class="btn-primary w-full py-3 mt-4" :disabled="loading">
+                    {{ loading ? '注册中...' : '注册账号' }}
+                </button>
+                <div class="text-center mt-4">
+                    <span class="text-gray-500 text-sm">已有账号？</span>
+                    <button @click="toggleAuthMode" class="text-orange-500 text-sm hover:underline ml-1">直接登录</button>
+                </div>
             </div>
         </div>
     </div>
@@ -65,11 +112,11 @@
         <div class="sidebar">
             <div class="mb-8 pb-4 border-b border-gray-800">
                 <h2 class="text-xl font-bold brand-orange">红岩网校</h2>
-                <p class="text-xs text-gray-500 mt-1">作业管理系统</p>
+                <p class="text-xs text-gray-500 mt-1">作业考核系统</p>
             </div>
-            
+
             <div class="mb-4">
-                <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">菜单</div>
+                <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">作业管理</div>
                 <div @click="currentTab = 'homeworks'" :class="['nav-item', currentTab === 'homeworks' ? 'active' : '']">
                     <span>📚</span> 作业大厅
                 </div>
@@ -78,6 +125,26 @@
                 </div>
                 <div v-if="user?.role === 'admin'" @click="currentTab = 'create'" :class="['nav-item', currentTab === 'create' ? 'active' : '']">
                     <span>➕</span> 发布作业
+                </div>
+            </div>
+
+            <div class="mb-4" v-if="user?.role === 'admin'">
+                <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">考核管理</div>
+                <div @click="currentTab = 'exams'" :class="['nav-item', currentTab === 'exams' ? 'active' : '']">
+                    <span>🎯</span> 考核大厅
+                </div>
+                <div @click="currentTab = 'createExam'" :class="['nav-item', currentTab === 'createExam' ? 'active' : '']">
+                    <span>📝</span> 创建考核
+                </div>
+                <div @click="currentTab = 'reviews'" :class="['nav-item', currentTab === 'reviews' ? 'active' : '']">
+                    <span>✅</span> 我的阅卷
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider">个人中心</div>
+                <div @click="currentTab = 'profile'" :class="['nav-item', currentTab === 'profile' ? 'active' : '']">
+                    <span>👤</span> 个人信息
                 </div>
             </div>
 
@@ -115,29 +182,29 @@
                             <option value="product">产品</option>
                             <option value="design">视觉设计</option>
                             <option value="android">Android</option>
-                            <option value="ios">iOS</option>
+                            <option value="iOS">iOS</option>
                         </select>
                         <button @click="fetchHomeworks" class="btn-primary">刷新</button>
                     </div>
                 </div>
 
                 <div v-if="loading" class="loading">加载中...</div>
-                
+
                 <div v-else class="grid gap-4">
                     <div v-for="hw in homeworks" :key="hw.id" @click="viewDetail(hw)" class="card cursor-pointer hover:border-orange-500 transition-colors">
                         <div class="flex justify-between items-start mb-3">
                             <h3 class="text-lg font-bold text-white">{{ hw.title }}</h3>
-                            <span class="tag tag-orange">{{ hw.department_label }}</span>
+                            <span class="tag tag-orange">作业</span>
                         </div>
                         <div class="text-gray-400 text-sm mb-3">
-                            <span class="mr-4">⏰ 截止时间：{{ hw.deadline }}</span>
+                            <span class="mr-4">⏰ {{ hw.deadline }}</span>
                             <span :class="hw.allow_late ? 'text-green-400' : 'text-red-400'">
                                 {{ hw.allow_late ? '✓ 允许补交' : '✗ 不允许补交' }}
                             </span>
                         </div>
                         <div class="flex justify-between items-center text-sm">
-                            <span class="text-gray-500">发布者：{{ hw.creator?.nickname || '未知' }}</span>
-                            <span class="brand-orange cursor-pointer">查看详情 →</span>
+                            <span class="text-gray-500">{{ hw.department_label }} · {{ hw.creator?.nickname || '未知' }}</span>
+                            <span class="brand-orange">查看详情 →</span>
                         </div>
                     </div>
                 </div>
@@ -151,64 +218,92 @@
 
             <!-- 作业详情 -->
             <div v-if="currentTab === 'detail' && selectedHomework">
-                <button @click="currentTab = 'homeworks'" class="text-gray-400 hover:text-white mb-4 flex items-center gap-2">
-                    ← 返回列表
-                </button>
-                
-                <div class="card mb-6">
-                    <h2 class="text-2xl font-bold mb-4 text-white">{{ selectedHomework.title }}</h2>
-                    <div class="grid grid-cols-3 gap-4 mb-6 text-sm">
-                        <div><span class="text-gray-500">部门：</span><span class="tag tag-orange">{{ selectedHomework.department_label }}</span></div>
-                        <div><span class="text-gray-500">截止时间：</span><span class="text-white">{{ selectedHomework.deadline }}</span></div>
-                        <div><span class="text-gray-500">补交：</span>
-                            <span :class="selectedHomework.allow_late ? 'text-green-400' : 'text-red-400'">
-                                {{ selectedHomework.allow_late ? '允许' : '不允许' }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="bg-[#0f0f0f] p-4 rounded border border-gray-800 whitespace-pre-wrap text-gray-300">
-                        {{ selectedHomework.description }}
-                    </div>
-                </div>
+                <button @click="currentTab = 'homeworks'" class="text-gray-400 hover:text-white mb-4 flex items-center gap-2">← 返回列表</button>
 
-                <!-- Student 提交表单 -->
-                <div v-if="user?.role === 'student'" class="card">
-                    <h3 class="font-bold mb-4 brand-orange text-lg">提交作业</h3>
-                    <div v-if="submitSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">提交成功！</div>
-                    <div v-if="submitError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ submitError }}</div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-gray-400 mb-2 text-sm">提交内容 / GitHub 链接</label>
-                            <textarea v-model="submitForm.content" rows="4" class="input-dark" placeholder="请输入作业内容或代码仓库链接..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 mb-2 text-sm">附件链接（可选）</label>
-                            <input v-model="submitForm.file_url" type="text" class="input-dark" placeholder="https://...">
-                        </div>
-                        <button @click="submitHomework" class="btn-primary" :disabled="submitting">
-                            {{ submitting ? '提交中...' : '提交作业' }}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Admin 查看提交列表 -->
-                <div v-if="user?.role === 'admin'" class="card">
-                    <h3 class="font-bold mb-4 brand-orange text-lg">学生提交记录</h3>
-                    <div v-if="submissions.length === 0" class="text-gray-500 text-center py-8">暂无提交记录</div>
-                    <div v-else class="space-y-3">
-                        <div v-for="sub in submissions" :key="sub.id" class="bg-[#0f0f0f] p-4 rounded border border-gray-800">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="font-bold text-white">学生ID: {{ sub.student_id }}</span>
-                                <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">
-                                    {{ sub.is_late ? '迟交' : '准时' }}
-                                </span>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="card mb-6">
+                            <h2 class="text-2xl font-bold mb-4 text-white">{{ selectedHomework.title }}</h2>
+                            <div class="grid grid-cols-3 gap-4 mb-6 text-sm">
+                                <div><span class="text-gray-500">部门：</span><span class="tag tag-orange">{{ selectedHomework.department_label }}</span></div>
+                                <div><span class="text-gray-500">截止时间：</span><span class="text-white">{{ selectedHomework.deadline }}</span></div>
+                                <div><span class="text-gray-500">补交：</span><span :class="selectedHomework.allow_late ? 'text-green-400' : 'text-red-400'">{{ selectedHomework.allow_late ? '允许' : '不允许' }}</span></div>
                             </div>
-                            <p class="text-sm text-gray-400 mb-2 line-clamp-2">{{ sub.content }}</p>
-                            <div class="flex justify-between items-center">
-                                <span v-if="sub.score !== null" class="text-xl font-bold brand-orange">{{ sub.score }} 分</span>
-                                <span v-else class="text-gray-500 text-sm">未批改</span>
-                                <span v-if="sub.is_excellent" class="tag tag-orange">优秀作业</span>
+                            <div class="bg-[#0f0f0f] p-4 rounded border border-gray-800 whitespace-pre-wrap text-gray-300 min-h-[100px]">
+                                {{ selectedHomework.description || '暂无描述' }}
+                            </div>
+                        </div>
+
+                        <!-- Student 提交 -->
+                        <div v-if="user?.role === 'student'" class="card">
+                            <h3 class="font-bold mb-4 brand-orange text-lg">提交作业</h3>
+                            <div v-if="submitSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">提交成功！</div>
+                            <div v-if="submitError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ submitError }}</div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-gray-400 mb-2 text-sm">提交内容 / GitHub 链接</label>
+                                    <textarea v-model="submitForm.content" rows="4" class="input-dark" placeholder="请输入作业内容或代码仓库链接..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-400 mb-2 text-sm">附件链接（可选）</label>
+                                    <input v-model="submitForm.file_url" type="text" class="input-dark" placeholder="https://...">
+                                </div>
+                                <button @click="submitHomework" class="btn-primary" :disabled="submitting">{{ submitting ? '提交中...' : '提交作业' }}</button>
+                            </div>
+                        </div>
+
+                        <!-- Admin 批改 -->
+                        <div v-if="user?.role === 'admin'" class="card">
+                            <h3 class="font-bold mb-4 brand-orange text-lg">学生提交记录</h3>
+                            <div v-if="submissions.length === 0" class="text-gray-500 text-center py-8">暂无提交记录</div>
+                            <div v-else class="space-y-4">
+                                <div v-for="sub in submissions" :key="sub.id" class="bg-[#0f0f0f] p-4 rounded border border-gray-800">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <span class="font-bold text-white">{{ sub.student?.nickname || 'ID:' + sub.student_id }}</span>
+                                            <span class="text-gray-500 text-sm ml-2">{{ sub.submitted_at }}</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <span v-if="sub.is_excellent" class="tag tag-orange">优秀</span>
+                                            <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">{{ sub.is_late ? '迟交' : '准时' }}</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-400 mb-3 bg-[#1a1a1a] p-2 rounded">{{ sub.content }}</p>
+
+                                    <!-- 已批改显示 -->
+                                    <div v-if="sub.score !== null" class="mb-3">
+                                        <div class="flex items-center gap-4">
+                                            <div class="text-2xl font-bold brand-orange">{{ sub.score }}分</div>
+                                            <div class="flex-1 text-sm text-gray-300 bg-[#262626] p-2 rounded">评语：{{ sub.comment || '暂无评语' }}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 未批改表单 -->
+                                    <div v-if="sub.score === null" class="border-t border-gray-800 pt-3 mt-3">
+                                        <button @click="aiReview(sub)" class="btn-secondary text-sm mb-2" :disabled="sub.aiReviewing">
+                                            {{ sub.aiReviewing ? '🤖 分析中...' : '🤖 AI辅助评价' }}
+                                        </button>
+                                        <div v-if="sub.aiResult" class="bg-[#1a1a1a] p-3 rounded border border-orange-800/50 mb-3">
+                                            <div class="text-xs text-orange-400 mb-1">AI建议：{{ sub.aiResult.suggested_score }}分</div>
+                                            <div class="text-xs text-gray-400 mb-2">{{ sub.aiResult.ai_comment }}</div>
+                                            <button @click="applyAIReview(sub)" class="text-xs text-orange-500 hover:underline">采用建议</button>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3 mb-3">
+                                            <input v-model="sub.reviewScore" type="number" min="0" max="100" class="input-dark" placeholder="分数 (0-100)">
+                                            <input v-model="sub.reviewComment" type="text" class="input-dark" placeholder="评语">
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button @click="reviewSubmission(sub)" class="btn-success text-sm" :disabled="sub.reviewing">提交批改</button>
+                                            <button @click="toggleExcellent(sub)" class="btn-secondary text-sm" :disabled="sub.excelling">标记优秀</button>
+                                        </div>
+                                        <div v-if="sub.reviewError" class="text-red-400 text-xs mt-2">{{ sub.reviewError }}</div>
+                                    </div>
+
+                                    <!-- 已批改但可标记优秀 -->
+                                    <div v-if="sub.score !== null && !sub.is_excellent" class="border-t border-gray-800 pt-3 mt-3">
+                                        <button @click="toggleExcellent(sub)" class="btn-secondary text-sm" :disabled="sub.excelling">标记为优秀作业</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -219,25 +314,19 @@
             <div v-if="currentTab === 'my'">
                 <h2 class="text-2xl font-bold mb-6 text-white">我的提交记录</h2>
                 <div v-if="myLoading" class="loading">加载中...</div>
-                <div v-else-if="mySubmissions.length === 0" class="text-center text-gray-500 py-12">
-                    暂无提交记录
-                </div>
+                <div v-else-if="mySubmissions.length === 0" class="text-center text-gray-500 py-12">暂无提交记录</div>
                 <div v-else class="grid gap-4">
                     <div v-for="sub in mySubmissions" :key="sub.id" class="card">
                         <div class="flex justify-between items-start mb-3">
                             <h3 class="font-bold text-white text-lg">{{ sub.homework?.title || '未知作业' }}</h3>
                             <div class="flex gap-2">
                                 <span v-if="sub.is_excellent" class="tag tag-orange">优秀作业</span>
-                                <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">
-                                    {{ sub.is_late ? '迟交' : '准时' }}
-                                </span>
+                                <span :class="sub.is_late ? 'tag-red' : 'tag-green'" class="tag">{{ sub.is_late ? '迟交' : '准时' }}</span>
                             </div>
                         </div>
-                        <div class="text-sm text-gray-400 mb-3">提交时间：{{ sub.submitted_at }}</div>
-                        <div class="bg-[#0f0f0f] p-3 rounded mb-4 text-gray-300 text-sm border border-gray-800">
-                            {{ sub.content }}
-                        </div>
-                        
+                        <div class="text-sm text-gray-400 mb-3">{{ sub.submitted_at }}</div>
+                        <div class="bg-[#0f0f0f] p-3 rounded mb-4 text-gray-300 text-sm border border-gray-800">{{ sub.content }}</div>
+
                         <div v-if="sub.score !== null" class="flex items-center gap-4">
                             <div class="text-3xl font-bold brand-orange">{{ sub.score }}<span class="text-lg">分</span></div>
                             <div class="flex-1">
@@ -245,39 +334,30 @@
                                 <div class="text-gray-300 bg-[#262626] p-3 rounded text-sm">{{ sub.comment || '暂无评语' }}</div>
                             </div>
                         </div>
-                        <div v-else class="text-gray-500 text-center py-4 bg-[#0f0f0f] rounded border border-gray-800">
-                            ⏳ 等待老师批改中...
-                        </div>
+                        <div v-else class="text-gray-500 text-center py-4 bg-[#0f0f0f] rounded border border-gray-800">⏳ 等待老师批改中...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 发布作业 (Admin) -->
+            <!-- 发布作业 -->
             <div v-if="currentTab === 'create'">
                 <h2 class="text-2xl font-bold mb-6 text-white">发布新作业</h2>
                 <div class="card max-w-2xl">
                     <div v-if="createSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">发布成功！</div>
                     <div v-if="createError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ createError }}</div>
-                    
                     <div class="space-y-4">
                         <div>
                             <label class="block text-gray-400 mb-2 text-sm">作业标题</label>
-                            <input v-model="createForm.title" type="text" class="input-dark" placeholder="例如：第一周作业：实现用户登录">
+                            <input v-model="createForm.title" type="text" class="input-dark" placeholder="例如：第一周作业">
                         </div>
                         <div>
                             <label class="block text-gray-400 mb-2 text-sm">所属部门</label>
                             <select v-model="createForm.department" class="input-dark">
-                                <option value="backend">后端</option>
-                                <option value="frontend">前端</option>
-                                <option value="sre">SRE</option>
-                                <option value="product">产品</option>
-                                <option value="design">视觉设计</option>
-                                <option value="android">Android</option>
-                                <option value="ios">iOS</option>
+                                <option v-for="dept in departments" :value="dept.value">{{ dept.label }}</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-gray-400 mb-2 text-sm">截止时间</label>
+                            <label class="block text-gray-400 mb-2 text-sm">截止时间 <span class="text-orange-500 text-xs">(2006-01-02 15:04:05)</span></label>
                             <input v-model="createForm.deadline" type="text" class="input-dark" placeholder="2026-02-20 23:59:59">
                         </div>
                         <div>
@@ -288,191 +368,571 @@
                             <input v-model="createForm.allow_late" type="checkbox" id="allow_late" class="w-4 h-4 accent-orange-500">
                             <label for="allow_late" class="text-sm">允许补交</label>
                         </div>
-                        <button @click="createHomework" class="btn-primary w-full py-3" :disabled="creating">
-                            {{ creating ? '发布中...' : '发布作业' }}
-                        </button>
+                        <button @click="createHomework" class="btn-primary w-full py-3" :disabled="creating">{{ creating ? '发布中...' : '发布作业' }}</button>
                     </div>
                 </div>
             </div>
+
+            <!-- 个人中心 -->
+            <div v-if="currentTab === 'profile'">
+                <h2 class="text-2xl font-bold mb-6 text-white">个人中心</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card">
+                        <h3 class="font-bold mb-4 text-white">基本信息</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between py-2 border-b border-gray-800">
+                                <span class="text-gray-500">用户名</span>
+                                <span class="text-white">{{ user?.username }}</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-gray-800">
+                                <span class="text-gray-500">昵称</span>
+                                <span class="text-white">{{ user?.nickname }}</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-gray-800">
+                                <span class="text-gray-500">角色</span>
+                                <span class="brand-orange">{{ user?.role === 'admin' ? '管理员' : '学生' }}</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-gray-800">
+                                <span class="text-gray-500">部门</span>
+                                <span class="text-white">{{ user?.department_label }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="font-bold mb-4 text-white">邮箱绑定</h3>
+                        <div v-if="user?.email" class="mb-4 text-green-400">
+                            <span class="text-gray-500 text-sm">当前邮箱：</span>{{ user.email }}
+                        </div>
+                        <div v-else class="mb-4 text-gray-500 text-sm">未绑定邮箱</div>
+                        <div class="flex gap-2">
+                            <input v-model="emailForm.email" type="email" class="input-dark flex-1" placeholder="your@email.com">
+                            <button @click="bindEmail" class="btn-primary" :disabled="emailLoading">{{ emailLoading ? '绑定中...' : '绑定' }}</button>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2">绑定邮箱后可接收作业截止提醒和批改通知</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 考核大厅 -->
+            <div v-if="currentTab === 'exams'">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">考核大厅</h2>
+                    <button @click="fetchExams" class="btn-primary">刷新</button>
+                </div>
+                <div v-if="examLoading" class="loading">加载中...</div>
+                <div v-else-if="exams.length === 0" class="text-center text-gray-500 py-12">暂无考核</div>
+                <div v-else class="grid gap-4">
+                    <div v-for="exam in exams" :key="exam.id" @click="viewExamDetail(exam)" class="card cursor-pointer hover:border-purple-500 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-lg font-bold text-white">{{ exam.title }}</h3>
+                            <span class="tag tag-purple">考核</span>
+                        </div>
+                        <div class="text-gray-400 text-sm mb-3">
+                            <span class="mr-4">⏰ 截止时间：{{ exam.deadline }}</span>
+                            <span class="mr-4">⏱️ 时长：{{ exam.duration }}分钟</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">{{ exam.department }} · 总分{{ exam.total_score }}分</span>
+                            <span class="text-purple-400">查看详情 →</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 创建考核 -->
+            <div v-if="currentTab === 'createExam'">
+                <h2 class="text-2xl font-bold mb-6 text-white">创建新考核</h2>
+                <div class="card max-w-2xl">
+                    <div v-if="examCreateSuccess" class="bg-green-900/50 text-green-300 p-3 rounded mb-4 border border-green-800">创建成功！已自动分配阅卷任务</div>
+                    <div v-if="examCreateError" class="bg-red-900/50 text-red-300 p-3 rounded mb-4 border border-red-800">{{ examCreateError }}</div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">考核标题</label>
+                            <input v-model="examForm.title" type="text" class="input-dark" placeholder="期中考核">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">所属部门</label>
+                            <select v-model="examForm.department" class="input-dark">
+                                <option v-for="dept in departments" :value="dept.value">{{ dept.label }}</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-400 mb-2 text-sm">考试时长（分钟）</label>
+                                <input v-model="examForm.duration" type="number" class="input-dark" placeholder="120">
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 mb-2 text-sm">阅卷人数</label>
+                                <input v-model="examForm.reviewer_count" type="number" min="1" max="5" class="input-dark" placeholder="2">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">截止时间 <span class="text-orange-500 text-xs">(2006-01-02 15:04:05)</span></label>
+                            <input v-model="examForm.deadline" type="text" class="input-dark" placeholder="2026-02-20 23:59:59">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2 text-sm">考核描述</label>
+                            <textarea v-model="examForm.description" rows="5" class="input-dark" placeholder="考核要求..."></textarea>
+                        </div>
+                        <button @click="createExam" class="btn-purple w-full py-3" :disabled="examCreating">{{ examCreating ? '创建中...' : '创建考核' }}</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 我的阅卷 -->
+            <div v-if="currentTab === 'reviews'">
+                <h2 class="text-2xl font-bold mb-6 text-white">我的阅卷任务</h2>
+                <div v-if="reviewLoading" class="loading">加载中...</div>
+                <div v-else-if="myReviews.length === 0" class="text-center text-gray-500 py-12">暂无待阅卷任务</div>
+                <div v-else class="grid gap-4">
+                    <div v-for="review in myReviews" :key="review.id" class="card">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">考核ID: {{ review.exam_id }}</h3>
+                                <p class="text-sm text-gray-400">学生ID: {{ review.student_id }}</p>
+                            </div>
+                            <span class="tag tag-blue">待阅卷</span>
+                        </div>
+                        <div v-if="review.status === 'completed'" class="mb-4">
+                            <div class="text-2xl font-bold brand-orange">{{ review.score }}分</div>
+                            <div class="text-sm text-gray-400">{{ review.comment }}</div>
+                        </div>
+                        <div v-else class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <input v-model="review.inputScore" type="number" min="0" max="100" class="input-dark" placeholder="分数 (0-100)">
+                                <input v-model="review.inputComment" type="text" class="input-dark" placeholder="评语">
+                            </div>
+                            <div class="text-xs text-gray-500">版本号: {{ review.version }}（防止并发冲突）</div>
+                            <button @click="submitReview(review)" class="btn-success" :disabled="review.submitting">提交阅卷</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 <script>
-const { createApp } = Vue;
+    const { createApp } = Vue;
 
-createApp({
-    data() {
-        return {
-            API_BASE_URL: 'http://localhost:8080',
-            token: localStorage.getItem('access_token') || '',
-            user: JSON.parse(localStorage.getItem('user') || 'null'),
-            currentTab: 'homeworks',
-            loading: false,
-            error: '',
-            
-            // 登录
-            loginForm: { username: '', password: '' },
-            
-            // 作业列表
-            homeworks: [],
-            page: 1,
-            filterDept: '',
-            
-            // 详情
-            selectedHomework: null,
-            submissions: [],
-            
-            // 提交
-            submitForm: { content: '', file_url: '' },
-            submitting: false,
-            submitSuccess: false,
-            submitError: '',
-            
-            // 我的提交
-            mySubmissions: [],
-            myLoading: false,
-            
-            // 创建
-            createForm: {
-                title: '',
-                department: 'backend',
-                description: '',
-                deadline: '',
-                allow_late: false
+    createApp({
+        data() {
+            return {
+                API_BASE_URL: 'http://localhost:8080',
+                token: localStorage.getItem('access_token') || '',
+                user: JSON.parse(localStorage.getItem('user') || 'null'),
+                currentTab: 'homeworks',
+                loading: false,
+                error: '',
+                successMsg: '',
+
+                isLogin: true,
+                loginForm: { username: '', password: '' },
+                registerForm: { username: '', password: '', nickname: '', department: 'backend' },
+
+                departments: [
+                    {value: 'backend', label: '后端'},
+                    {value: 'frontend', label: '前端'},
+                    {value: 'sre', label: 'SRE'},
+                    {value: 'product', label: '产品'},
+                    {value: 'design', label: '视觉设计'},
+                    {value: 'android', label: 'Android'},
+                    {value: 'iOS', label: 'iOS'}
+                ],
+
+                homeworks: [],
+                page: 1,
+                filterDept: '',
+                selectedHomework: null,
+                submissions: [],
+                submitForm: { content: '', file_url: '' },
+                submitting: false,
+                submitSuccess: false,
+                submitError: '',
+
+                mySubmissions: [],
+                myLoading: false,
+
+                createForm: { title: '', department: 'backend', description: '', deadline: '', allow_late: false },
+                creating: false,
+                createSuccess: false,
+                createError: '',
+
+                emailForm: { email: '' },
+                emailLoading: false,
+
+                // 考核相关
+                exams: [],
+                examLoading: false,
+                examForm: { title: '', department: 'backend', description: '', deadline: '', duration: 120, reviewer_count: 2, total_score: 100 },
+                examCreating: false,
+                examCreateSuccess: false,
+                examCreateError: '',
+
+                myReviews: [],
+                reviewLoading: false,
+                selectedExam: null
+            }
+        },
+        mounted() {
+            if (this.token) {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+                this.fetchHomeworks();
+                if (this.user?.role === 'student') this.fetchMySubmissions();
+                if (this.user?.role === 'admin') {
+                    this.fetchExams();
+                    this.fetchMyReviews();
+                }
+            }
+        },
+        methods: {
+            toggleAuthMode() {
+                this.isLogin = !this.isLogin;
+                this.error = '';
+                this.successMsg = '';
             },
-            creating: false,
-            createSuccess: false,
-            createError: ''
-        }
-    },
-    mounted() {
-        if (this.token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-            this.fetchHomeworks();
-            if (this.user?.role === 'student') this.fetchMySubmissions();
-        }
-    },
-    methods: {
-        async login() {
-            this.loading = true;
-            this.error = '';
-            try {
-                const res = await axios.post(`${this.API_BASE_URL}/user/login`, this.loginForm);
-                if (res.data.code === 0) {
-                    this.token = res.data.data.access_token;
-                    this.user = res.data.data.user;
-                    localStorage.setItem('access_token', this.token);
-                    localStorage.setItem('user', JSON.stringify(this.user));
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-                    this.fetchHomeworks();
-                    if (this.user.role === 'student') this.fetchMySubmissions();
-                } else {
-                    this.error = res.data.message;
+
+            async login() {
+                this.loading = true;
+                this.error = '';
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/user/login`, this.loginForm);
+                    if (res.data.code === 0) {
+                        this.token = res.data.data.access_token;
+                        this.user = res.data.data.user;
+                        localStorage.setItem('access_token', this.token);
+                        localStorage.setItem('user', JSON.stringify(this.user));
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+                        this.fetchHomeworks();
+                        if (this.user.role === 'student') this.fetchMySubmissions();
+                        if (this.user.role === 'admin') {
+                            this.fetchExams();
+                            this.fetchMyReviews();
+                        }
+                    } else {
+                        this.error = res.data.message;
+                    }
+                } catch (e) {
+                    this.error = '登录失败：' + (e.response?.data?.message || e.message);
+                } finally {
+                    this.loading = false;
                 }
-            } catch (e) {
-                this.error = '登录失败：' + (e.response?.data?.message || e.message);
-            } finally {
-                this.loading = false;
-            }
-        },
-        logout() {
-            this.token = '';
-            this.user = null;
-            localStorage.clear();
-            this.currentTab = 'homeworks';
-            delete axios.defaults.headers.common['Authorization'];
-        },
-        async fetchHomeworks() {
-            this.loading = true;
-            try {
-                const res = await axios.get(`${this.API_BASE_URL}/homework`, {
-                    params: { department: this.filterDept, page: this.page, page_size: 10 }
-                });
-                this.homeworks = res.data.data?.list || [];
-            } catch (e) {
-                console.error(e);
-            } finally {
-                this.loading = false;
-            }
-        },
-        viewDetail(hw) {
-            this.selectedHomework = hw;
-            this.currentTab = 'detail';
-            this.submitSuccess = false;
-            this.submitError = '';
-            this.submitForm = { content: '', file_url: '' };
-            if (this.user?.role === 'admin') this.fetchSubmissions(hw.id);
-        },
-        async fetchSubmissions(homeworkId) {
-            try {
-                const res = await axios.get(`${this.API_BASE_URL}/submission/homework/${homeworkId}`);
-                this.submissions = res.data.data?.list || [];
-            } catch (e) {
-                console.error(e);
-            }
-        },
-        async submitHomework() {
-            this.submitting = true;
-            this.submitError = '';
-            this.submitSuccess = false;
-            try {
-                const res = await axios.post(`${this.API_BASE_URL}/submission`, {
-                    homework_id: this.selectedHomework.id,
-                    content: this.submitForm.content,
-                    file_url: this.submitForm.file_url
-                });
-                if (res.data.code === 0) {
-                    this.submitSuccess = true;
-                    this.submitForm = { content: '', file_url: '' };
-                    this.fetchMySubmissions();
-                } else {
-                    this.submitError = res.data.message;
+            },
+
+            async register() {
+                this.loading = true;
+                this.error = '';
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/user/register`, this.registerForm);
+                    if (res.data.code === 0) {
+                        this.successMsg = '注册成功！请登录';
+                        this.isLogin = true;
+                        this.loginForm.username = this.registerForm.username;
+                        this.registerForm = { username: '', password: '', nickname: '', department: 'backend' };
+                    } else {
+                        this.error = res.data.message;
+                    }
+                } catch (e) {
+                    this.error = '注册失败：' + (e.response?.data?.message || e.message);
+                } finally {
+                    this.loading = false;
                 }
-            } catch (e) {
-                this.submitError = e.response?.data?.message || '提交失败';
-            } finally {
-                this.submitting = false;
-            }
-        },
-        async fetchMySubmissions() {
-            this.myLoading = true;
-            try {
-                const res = await axios.get(`${this.API_BASE_URL}/submission/my`);
-                this.mySubmissions = res.data.data?.list || [];
-            } catch (e) {
-                console.error(e);
-            } finally {
-                this.myLoading = false;
-            }
-        },
-        async createHomework() {
-            this.creating = true;
-            this.createError = '';
-            this.createSuccess = false;
-            try {
-                const res = await axios.post(`${this.API_BASE_URL}/homework`, this.createForm);
-                if (res.data.code === 0) {
-                    this.createSuccess = true;
-                    this.createForm = {
-                        title: '',
-                        department: 'backend',
-                        description: '',
-                        deadline: '',
-                        allow_late: false
-                    };
-                    this.fetchHomeworks();
-                } else {
-                    this.createError = res.data.message;
+            },
+
+            logout() {
+                this.token = '';
+                this.user = null;
+                localStorage.clear();
+                this.currentTab = 'homeworks';
+                delete axios.defaults.headers.common['Authorization'];
+            },
+
+            async fetchHomeworks() {
+                this.loading = true;
+                try {
+                    const res = await axios.get(`${this.API_BASE_URL}/homework`, {
+                        params: { department: this.filterDept, page: this.page, page_size: 10 }
+                    });
+                    this.homeworks = res.data.data?.list || [];
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    this.loading = false;
                 }
-            } catch (e) {
-                this.createError = e.response?.data?.message || '发布失败';
-            } finally {
-                this.creating = false;
+            },
+
+            viewDetail(hw) {
+                this.selectedHomework = hw;
+                this.currentTab = 'detail';
+                this.submitSuccess = false;
+                this.submitError = '';
+                this.submitForm = { content: '', file_url: '' };
+                if (this.user?.role === 'admin') {
+                    this.fetchSubmissions(hw.id);
+                }
+            },
+
+            async fetchSubmissions(homeworkId) {
+                try {
+                    const res = await axios.get(`${this.API_BASE_URL}/submission/homework/${homeworkId}`);
+                    this.submissions = (res.data.data?.list || []).map(sub => ({
+                        ...sub,
+                        reviewScore: '',
+                        reviewComment: '',
+                        reviewing: false,
+                        excelling: false,
+                        reviewError: '',
+                        aiReviewing: false,
+                        aiResult: null
+                    }));
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+
+            async submitHomework() {
+                this.submitting = true;
+                this.submitError = '';
+                this.submitSuccess = false;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/submission`, {
+                        homework_id: this.selectedHomework.id,
+                        content: this.submitForm.content,
+                        file_url: this.submitForm.file_url
+                    });
+                    if (res.data.code === 0) {
+                        this.submitSuccess = true;
+                        this.submitForm = { content: '', file_url: '' };
+                        this.fetchMySubmissions();
+                    } else {
+                        this.submitError = res.data.message;
+                    }
+                } catch (e) {
+                    this.submitError = e.response?.data?.message || '提交失败';
+                } finally {
+                    this.submitting = false;
+                }
+            },
+
+            async fetchMySubmissions() {
+                this.myLoading = true;
+                try {
+                    const res = await axios.get(`${this.API_BASE_URL}/submission/my`);
+                    this.mySubmissions = res.data.data?.list || [];
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    this.myLoading = false;
+                }
+            },
+
+            async createHomework() {
+                this.creating = true;
+                this.createError = '';
+                this.createSuccess = false;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/homework`, this.createForm);
+                    if (res.data.code === 0) {
+                        this.createSuccess = true;
+                        this.createForm = { title: '', department: 'backend', description: '', deadline: '', allow_late: false };
+                        this.fetchHomeworks();
+                    } else {
+                        this.createError = res.data.message;
+                    }
+                } catch (e) {
+                    this.createError = e.response?.data?.message || '发布失败';
+                } finally {
+                    this.creating = false;
+                }
+            },
+
+            async aiReview(sub) {
+                sub.aiReviewing = true;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/submission/${sub.id}/aiReview`);
+                    if (res.data.code === 0) {
+                        sub.aiResult = res.data.data;
+                    } else {
+                        alert('AI评价失败：' + res.data.message);
+                    }
+                } catch (e) {
+                    alert('AI评价失败：' + (e.response?.data?.message || '请检查AI配置'));
+                } finally {
+                    sub.aiReviewing = false;
+                }
+            },
+
+            applyAIReview(sub) {
+                if (sub.aiResult) {
+                    sub.reviewScore = sub.aiResult.suggested_score;
+                    sub.reviewComment = sub.aiResult.ai_comment;
+                }
+            },
+
+            async reviewSubmission(sub) {
+                if (!sub.reviewScore || sub.reviewScore < 0 || sub.reviewScore > 100) {
+                    sub.reviewError = '请输入 0-100 的分数';
+                    return;
+                }
+                sub.reviewing = true;
+                sub.reviewError = '';
+                try {
+                    const res = await axios.put(`${this.API_BASE_URL}/submission/${sub.id}/review`, {
+                        score: parseInt(sub.reviewScore),
+                        comment: sub.reviewComment || '暂无评语'
+                    });
+                    if (res.data.code === 0) {
+                        sub.score = parseInt(sub.reviewScore);
+                        sub.comment = sub.reviewComment || '暂无评语';
+                    } else {
+                        sub.reviewError = res.data.message;
+                    }
+                } catch (e) {
+                    sub.reviewError = e.response?.data?.message || '批改失败';
+                } finally {
+                    sub.reviewing = false;
+                }
+            },
+
+            async toggleExcellent(sub) {
+                sub.excelling = true;
+                try {
+                    const res = await axios.put(`${this.API_BASE_URL}/submission/${sub.id}/excellent`, {
+                        is_excellent: !sub.is_excellent
+                    });
+                    if (res.data.code === 0) {
+                        sub.is_excellent = !sub.is_excellent;
+                    }
+                } catch (e) {
+                    alert('操作失败：' + (e.response?.data?.message || '未知错误'));
+                } finally {
+                    sub.excelling = false;
+                }
+            },
+
+            async bindEmail() {
+                if (!this.emailForm.email || !this.emailForm.email.includes('@')) {
+                    alert('请输入正确的邮箱地址');
+                    return;
+                }
+                this.emailLoading = true;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/user/bindEmail`, {
+                        email: this.emailForm.email
+                    });
+                    if (res.data.code === 0) {
+                        this.user.email = this.emailForm.email;
+                        localStorage.setItem('user', JSON.stringify(this.user));
+                        alert('邮箱绑定成功！');
+                        this.emailForm.email = '';
+                    } else {
+                        alert('绑定失败：' + res.data.message);
+                    }
+                } catch (e) {
+                    alert('绑定失败：' + (e.response?.data?.message || '未知错误'));
+                } finally {
+                    this.emailLoading = false;
+                }
+            },
+
+            // 考核相关方法
+            async fetchExams() {
+                this.examLoading = true;
+                try {
+                    // 复用作业列表接口（假设考核也是homeworks的一种，或通过exam接口）
+                    const res = await axios.get(`${this.API_BASE_URL}/exam`); // 如果后端有单独接口
+                    this.exams = res.data.data?.list || [];
+                } catch (e) {
+                    // 如果没有单独接口，暂时显示空
+                    this.exams = [];
+                } finally {
+                    this.examLoading = false;
+                }
+            },
+
+            viewExamDetail(exam) {
+                this.selectedExam = exam;
+                // 这里可以添加查看考核详情的逻辑
+            },
+
+            async createExam() {
+                this.examCreating = true;
+                this.examCreateError = '';
+                this.examCreateSuccess = false;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/exam`, {
+                        ...this.examForm,
+                        total_score: 100
+                    });
+                    if (res.data.code === 0) {
+                        this.examCreateSuccess = true;
+                        this.examForm = {
+                            title: '',
+                            department: 'backend',
+                            description: '',
+                            deadline: '',
+                            duration: 120,
+                            reviewer_count: 2
+                        };
+                        this.fetchExams();
+                    } else {
+                        this.examCreateError = res.data.message;
+                    }
+                } catch (e) {
+                    this.examCreateError = e.response?.data?.message || '创建失败';
+                } finally {
+                    this.examCreating = false;
+                }
+            },
+
+            async fetchMyReviews() {
+                this.reviewLoading = true;
+                try {
+                    const res = await axios.get(`${this.API_BASE_URL}/exam/reviews`);
+                    this.myReviews = (res.data.data?.list || []).map(r => ({
+                        ...r,
+                        inputScore: '',
+                        inputComment: '',
+                        submitting: false
+                    }));
+                } catch (e) {
+                    this.myReviews = [];
+                } finally {
+                    this.reviewLoading = false;
+                }
+            },
+
+            async submitReview(review) {
+                if (!review.inputScore || review.inputScore < 0 || review.inputScore > 100) {
+                    alert('请输入0-100的分数');
+                    return;
+                }
+                review.submitting = true;
+                try {
+                    const res = await axios.post(`${this.API_BASE_URL}/exam/review`, {
+                        review_id: review.id,
+                        score: parseInt(review.inputScore),
+                        comment: review.inputComment || '无评语',
+                        version: review.version
+                    });
+                    if (res.data.code === 0) {
+                        review.status = 'completed';
+                        review.score = review.inputScore;
+                        review.comment = review.inputComment;
+                        alert('阅卷提交成功！');
+                    } else {
+                        alert('提交失败：' + res.data.message);
+                    }
+                } catch (e) {
+                    alert('提交失败：' + (e.response?.data?.message || '版本冲突，请刷新重试'));
+                } finally {
+                    review.submitting = false;
+                }
             }
         }
-    }
-}).mount('#app');
+    }).mount('#app');
 </script>
 </body>
 </html>
